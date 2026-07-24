@@ -25,7 +25,7 @@ Ask one grouped set of questions:
 4. Optional Slack channel and member allowlists. Empty means any member may invoke the bot in a channel where it is installed.
 5. Desired voice, preferred terms, and prohibited language.
 
-Update `manifest.json` with these answers. Store an optional icon under `branding/` and set `agent.iconPath`. Leave the manifest status as `draft`. If Slack Connect was already created by the Deploy button, remind the owner to update its visible identity in Vercel Connect settings.
+Update `manifest.json` with these answers. Store an optional icon under `branding/` and set `agent.iconPath`. Leave the manifest status as `draft`. If Slack Connect was already created by the Deploy button or `pnpm run setup`, remind the owner to update its visible identity in Vercel Connect settings.
 
 ## 2. Collect approved sources
 
@@ -97,6 +97,6 @@ Only after an explicit yes:
 
 1. Mark active sources `approved`.
 2. Set `manifest.status` to `approved`.
-3. Record the approver and current ISO timestamp.
+3. Record the approver and current canonical ISO timestamp, such as `2026-07-24T00:00:00.000Z`.
 4. Run `pnpm check`.
-5. Commit and push. The production deployment updates from `main`.
+5. Commit and push. If the Vercel project is not Git-connected, run `pnpm exec vercel deploy --prod` after pushing.

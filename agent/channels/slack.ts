@@ -29,8 +29,25 @@ ${
 }
 
 export default slackChannel({
-  botName: designAgentConfig.name,
   credentials: configuredCredentials,
+  uploadPolicy: {
+    allowedMediaTypes: [
+      'image/*',
+      'text/*',
+      'application/json',
+      'application/msword',
+      'application/pdf',
+      'application/rtf',
+      'application/vnd.ms-excel',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.oasis.opendocument.presentation',
+      'application/vnd.oasis.opendocument.spreadsheet',
+      'application/vnd.oasis.opendocument.text',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+  },
   events: {
     'turn.started': () => {},
     'actions.requested': () => {},
@@ -56,9 +73,12 @@ export default slackChannel({
       return null;
     }
 
-    return {
-      auth: null,
-      context: [conversationContext(isDirectMessage)],
-    };
+    const isExistingSession = await ctx.isSubscribed();
+    return isExistingSession
+      ? { auth: null }
+      : {
+          auth: null,
+          context: [conversationContext(isDirectMessage)],
+        };
   },
 });

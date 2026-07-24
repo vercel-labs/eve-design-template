@@ -11,6 +11,6 @@ Use this workflow when approved guidance changes.
 7. Surface new gaps and equal-priority conflicts. Do not resolve them by inference.
 8. Require explicit owner approval.
 9. Update `approval.approvedBy` and `approval.approvedAt`.
-10. Run `pnpm check`, then commit and push to deploy production.
+10. Run `pnpm check`, then commit and push. If the Vercel project is not Git-connected, run `pnpm exec vercel deploy --prod`.
 
 The runtime never fetches source URLs. A refresh is always a reviewed repository change.

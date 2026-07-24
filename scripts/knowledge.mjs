@@ -119,7 +119,7 @@ export async function verifyKnowledge() {
   }
   validateSlackIds(
     agent.allowedChannelIds,
-    /^[CGD][A-Z0-9]+$/,
+    /^[CG][A-Z0-9]+$/,
     'allowedChannelIds',
   );
   validateSlackIds(
@@ -141,13 +141,18 @@ export async function verifyKnowledge() {
       !/^[a-z0-9][a-z0-9-]*$/.test(source.id) ||
       !isNonEmptyString(source.title) ||
       !isNonEmptyString(source.origin) ||
-      !isIsoDate(source.capturedAt) ||
+      !isNonEmptyString(source.snapshotPath) ||
       !isNonEmptyString(source.owner) ||
       !Number.isInteger(source.priority) ||
       !['draft', 'approved', 'superseded'].includes(source.status) ||
       typeof source.rightsConfirmed !== 'boolean'
     ) {
       fail(`source entry ${source?.id ?? '(unknown)'} is invalid.`);
+    }
+    if (!isIsoDate(source.capturedAt)) {
+      fail(
+        `source ${source.id} capturedAt must use canonical ISO format, such as 2026-07-24T00:00:00.000Z.`,
+      );
     }
     if (!source.snapshotPath.startsWith('knowledge/sources/')) {
       fail(`source ${source.id} must point into knowledge/sources/.`);
@@ -173,7 +178,9 @@ export async function verifyKnowledge() {
       !isNonEmptyString(manifest.approval.approvedBy) ||
       !isIsoDate(manifest.approval.approvedAt)
     ) {
-      fail('approved corpora require approver identity and ISO approval time.');
+      fail(
+        'approved corpora require approver identity and a canonical ISO approval time, such as 2026-07-24T00:00:00.000Z.',
+      );
     }
     if (manifest.sources.length === 0) {
       fail('approved corpora require at least one source.');

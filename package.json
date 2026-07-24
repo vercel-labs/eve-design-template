@@ -11,14 +11,16 @@
   "type": "module",
   "scripts": {
     "build": "pnpm prepare:knowledge && eve build",
-    "check": "pnpm verify:knowledge && pnpm type-check && pnpm build",
+    "check": "pnpm verify:knowledge && pnpm test && pnpm type-check && pnpm build",
     "dev": "pnpm prepare:knowledge && eve dev",
     "info": "pnpm prepare:knowledge && eve info",
     "prepare:knowledge": "node scripts/prepare-knowledge.mjs",
     "setup": "node scripts/setup.mjs",
     "start": "eve start",
+    "test": "node --test scripts/*.test.mjs",
     "type-check": "pnpm prepare:knowledge && tsc",
-    "verify:knowledge": "node scripts/verify-knowledge.mjs"
+    "verify:knowledge": "node scripts/verify-knowledge.mjs",
+    "verify:source-immutability": "node scripts/verify-source-immutability.mjs"
   },
   "engines": {
     "node": "24.x"

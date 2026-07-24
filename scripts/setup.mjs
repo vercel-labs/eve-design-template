@@ -7,9 +7,10 @@ import { readManifest, repoRoot } from './knowledge.mjs';
 
 const statePath = resolve(repoRoot, '.vercel/eve-design-template.json');
 const projectPath = resolve(repoRoot, '.vercel/project.json');
+const vercelExecutable = process.platform === 'win32' ? 'vercel.cmd' : 'vercel';
 
 function run(args, options = {}) {
-  const result = spawnSync('vercel', args, {
+  const result = spawnSync(vercelExecutable, args, {
     cwd: repoRoot,
     encoding: 'utf8',
     env: {
@@ -97,15 +98,61 @@ async function createConnector(name, iconPath) {
   return connectorUid;
 }
 
-async function validateRoute(deploymentUrl) {
-  const response = await fetch(`${deploymentUrl}/eve/v1/slack`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: '{}',
-  });
-  if (response.status !== 401) {
+function vercelCurl(path, deploymentUrl, curlArgs = []) {
+  const output = run(
+    [
+      'curl',
+      path,
+      '--deployment',
+      deploymentUrl,
+      '--yes',
+      '--',
+      '--silent',
+      '--show-error',
+      ...curlArgs,
+      '--write-out',
+      '\n%{http_code}',
+    ],
+    { capture: true },
+  );
+  const match = output.match(/\n(\d{3})\s*$/);
+  if (!match) {
+    throw new Error(`Could not read the status for ${path}.`);
+  }
+  return {
+    body: output.slice(0, match.index).trim(),
+    status: Number(match[1]),
+  };
+}
+
+function validateRoutes(deploymentUrl) {
+  const health = vercelCurl('/eve/v1/health', deploymentUrl);
+  if (health.status !== 200) {
     throw new Error(
-      `Expected the unsigned Slack route to return 401; received ${response.status}.`,
+      `Expected the Eve health route to return 200; received ${health.status}.`,
+    );
+  }
+  let healthPayload;
+  try {
+    healthPayload = JSON.parse(health.body);
+  } catch {
+    throw new Error('The Eve health route did not return JSON.');
+  }
+  if (healthPayload.ok !== true || healthPayload.status !== 'ready') {
+    throw new Error('The Eve health route did not report ready.');
+  }
+
+  const slack = vercelCurl('/eve/v1/slack', deploymentUrl, [
+    '--request',
+    'POST',
+    '--header',
+    'Content-Type: application/json',
+    '--data',
+    '{}',
+  ]);
+  if (slack.status !== 401 || slack.body !== 'unauthorized') {
+    throw new Error(
+      `Expected the unsigned Slack route to return 401 unauthorized; received ${slack.status} ${slack.body || '(empty body)'}.`,
     );
   }
 }
@@ -114,7 +161,8 @@ if (process.argv.includes('--help')) {
   console.log(`Usage: pnpm run setup
 
 Links a Vercel project, creates or reuses a Slack connector, attaches its
-production trigger, deploys production, and validates /eve/v1/slack.`);
+production trigger, deploys production, and validates the Eve health and Slack
+routes.`);
   process.exit(0);
 }
 
@@ -150,6 +198,7 @@ terminal.close();
 
 await writeState({ connectorUid });
 
+run(['connect', 'detach', connectorUid, '--yes'], { allowFailure: true });
 run([
   'connect',
   'attach',
@@ -181,5 +230,5 @@ if (!deploymentUrl) {
   throw new Error('Production deployed, but its URL could not be read.');
 }
 
-await validateRoute(deploymentUrl);
+validateRoutes(deploymentUrl);
 console.log(`Production ready: ${deploymentUrl}`);

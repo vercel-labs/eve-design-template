@@ -17,6 +17,8 @@ A generic, Slack-only design collaborator grounded in your organization's approv
 
 It does not search Slack or the web, edit artifacts, generate websites, deploy projects, or write to its corpus at runtime.
 
+Each top-level mention or DM starts a conversation. Continue in its Slack reply thread; channel follow-ups must mention the agent again.
+
 ## Set up
 
 1. Click **Deploy with Vercel** and authorize Slack.
@@ -36,7 +38,9 @@ pnpm install
 pnpm run setup
 ```
 
-It links the project, creates or reuses a Slack connector, attaches only the production trigger, deploys production, and checks the Slack route. Slack authorization opens in the browser when required.
+It links the project, creates or reuses a Slack connector, attaches only the production trigger, deploys production, and checks the Eve health and Slack routes through Deployment Protection. Slack authorization opens in the browser when required.
+
+CLI-linked projects do not deploy on Git pushes unless Git integration is also configured. After corpus changes, run `pnpm exec vercel deploy --prod` or rerun `pnpm run setup`.
 
 See [`docs/manual-slack-setup.md`](./docs/manual-slack-setup.md) for direct Slack credentials.
 
@@ -55,6 +59,7 @@ Useful commands:
 
 ```bash
 pnpm verify:knowledge
+pnpm test
 pnpm type-check
 pnpm build
 pnpm run info
