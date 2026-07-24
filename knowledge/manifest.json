@@ -1,0 +1,19 @@
+{
+  "$schema": "./manifest.schema.json",
+  "schemaVersion": 1,
+  "status": "draft",
+  "agent": {
+    "name": "design-agent",
+    "description": "A design collaborator grounded in your organization's guidelines.",
+    "iconPath": null,
+    "designOwnerSlackId": null,
+    "allowGeneralGuidance": true,
+    "allowedChannelIds": [],
+    "allowedUserIds": []
+  },
+  "approval": {
+    "approvedBy": null,
+    "approvedAt": null
+  },
+  "sources": []
+}

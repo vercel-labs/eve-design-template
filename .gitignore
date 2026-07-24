@@ -1,0 +1,9 @@
+node_modules/
+.eve/
+.output/
+.vercel/
+.env
+.env.*
+!.env.example
+generated/
+agent/sandbox/workspace/knowledge/

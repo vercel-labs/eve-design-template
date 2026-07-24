@@ -1,0 +1,39 @@
+{
+  "name": "eve-design-agent-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Slack design collaborator grounded in your organization's guidelines.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel-labs/eve-design-template.git"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "pnpm prepare:knowledge && eve build",
+    "check": "pnpm verify:knowledge && pnpm type-check && pnpm build",
+    "dev": "pnpm prepare:knowledge && eve dev",
+    "info": "pnpm prepare:knowledge && eve info",
+    "prepare:knowledge": "node scripts/prepare-knowledge.mjs",
+    "setup": "node scripts/setup.mjs",
+    "start": "eve start",
+    "type-check": "pnpm prepare:knowledge && tsc",
+    "verify:knowledge": "node scripts/verify-knowledge.mjs"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "pnpm@10.29.3",
+  "dependencies": {
+    "@vercel/connect": "0.4.2",
+    "ai": "7.0.37",
+    "eve": "0.27.3",
+    "jiti": "2.7.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "typescript": "7.0.2",
+    "vercel": "56.3.2"
+  }
+}
