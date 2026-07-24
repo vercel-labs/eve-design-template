@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+.eve/
+.output/
+.vercel/
+.env
+.env.*
+!.env.example
+generated/
+agent/sandbox/workspace/knowledge/
