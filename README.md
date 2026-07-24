@@ -1,6 +1,6 @@
 # Eve design agent template
 
-A generic, Slack-only design collaborator grounded in your organization's approved design guidelines.
+A Slack design agent that answers from your approved design guidelines.
 
 > Experimental: this template uses Eve preview APIs pinned to `0.27.3`.
 
@@ -9,40 +9,69 @@ A generic, Slack-only design collaborator grounded in your organization's approv
 ## What it does
 
 - Answers Slack DMs.
-- Answers channel messages only when explicitly mentioned.
-- Reads a reviewed, repository-owned design corpus.
-- Accepts message text, images, and documents as temporary turn context.
-- Clearly labels general recommendations when your corpus does not cover a topic.
-- Escalates unresolved shared-channel conflicts to the configured design owner.
+- Answers channel messages only when mentioned.
+- Reads a reviewed design corpus committed to your repository.
+- Uses message text, images, and documents as temporary context.
+- Labels general recommendations when enabled.
+- Flags equal-priority conflicts. In channels, it mentions your design owner.
 
-It does not search Slack or the web, edit artifacts, generate websites, deploy projects, or write to its corpus at runtime.
+It cannot search Slack or the web, change its corpus, edit artifacts, generate websites, or deploy projects.
 
-Each top-level mention or DM starts a conversation. Continue in its Slack reply thread; channel follow-ups must mention the agent again.
+Each DM or top-level mention starts a conversation. Continue in its reply thread. Channel replies must mention the agent again.
+
+## Before you deploy
+
+You need:
+
+- A Vercel account.
+- Permission to authorize a Slack app.
+- A design owner and their Slack member ID.
+- Existing design guidance, or a design owner who can create it with the bootstrap interview.
+- A private repository if the guidance is private.
 
 ## Set up
 
 1. Click **Deploy with Vercel** and authorize Slack.
 2. Clone the generated repository.
-3. Open [`BOOTSTRAP.md`](./BOOTSTRAP.md) with Codex, Claude Code, Conductor, or another coding agent.
-4. Review and explicitly approve the generated corpus.
-5. Commit and push to `main`.
+3. Install Node.js 24 and pnpm 10, then run `pnpm install`.
+4. Open the repository in Codex, Claude Code, Conductor, or another coding agent.
+5. Send:
 
-Until approval, every invocation receives:
+   > Follow `BOOTSTRAP.md` and help me set up this design agent. Ask one small batch of questions at a time. Do not approve or publish the corpus for me.
+
+6. Review the approval packet from `BOOTSTRAP.md` and explicitly approve the corpus.
+7. Commit and push to `main`.
+
+Until approval, the agent replies:
 
 > Design-agent setup is incomplete. Run the bootstrap workflow and approve the generated design corpus.
 
-For an existing Vercel project, install dependencies and run the resumable setup:
+Git-connected projects deploy after the push. Otherwise run:
+
+```bash
+pnpm exec vercel deploy --prod
+```
+
+## Set up from the CLI
 
 ```bash
 pnpm install
 pnpm run setup
 ```
 
-It links the project, creates or reuses a Slack connector, attaches only the production trigger, deploys production, and checks the Eve health and Slack routes through Deployment Protection. Slack authorization opens in the browser when required.
+The setup script links the project, creates or reuses a Slack connector, attaches its production trigger, deploys production, and checks the Eve health and Slack routes. It opens Slack authorization in the browser when required.
 
-CLI-linked projects do not deploy on Git pushes unless Git integration is also configured. After corpus changes, run `pnpm exec vercel deploy --prod` or rerun `pnpm run setup`.
+See [`docs/manual-slack-setup.md`](./docs/manual-slack-setup.md) to use direct Slack credentials.
 
-See [`docs/manual-slack-setup.md`](./docs/manual-slack-setup.md) for direct Slack credentials.
+## Knowledge
+
+- `knowledge/sources/`: immutable source snapshots.
+- `knowledge/guidelines/`: concise, actionable rules.
+- `knowledge/manifest.json`: identity, ownership, provenance, precedence, access, and approval.
+- [`BOOTSTRAP.md`](./BOOTSTRAP.md): first-time knowledge setup.
+- [`REFRESH.md`](./REFRESH.md): reviewed knowledge updates.
+
+The corpus is bundled at build time. Runtime conversations and attachments never change it.
 
 ## Develop
 
@@ -55,7 +84,13 @@ pnpm exec vercel env pull
 pnpm dev
 ```
 
-Useful commands:
+Run the full check:
+
+```bash
+pnpm check
+```
+
+Other commands:
 
 ```bash
 pnpm verify:knowledge
@@ -63,23 +98,13 @@ pnpm test
 pnpm type-check
 pnpm build
 pnpm run info
-pnpm check
 ```
 
-Set `DESIGN_AGENT_MODEL` to override the pinned default, `anthropic/claude-sonnet-4.6`.
-
-## Knowledge model
-
-- `knowledge/sources/`: immutable approved snapshots.
-- `knowledge/guidelines/`: normalized, actionable rules.
-- `knowledge/manifest.json`: ownership, provenance, priority, access policy, and approval.
-- [`REFRESH.md`](./REFRESH.md): reviewed update workflow.
-
-The corpus is committed to the adopter's repository and bundled at build time. Use a private repository for private design guidance.
+Set `DESIGN_AGENT_MODEL` to override the default model, `anthropic/claude-sonnet-4.6`.
 
 ## Runtime safety
 
-The agent can read and search its bundled corpus. Shell, file writes, web access, delegation, todo management, and sandbox network access are disabled. It has no connectors beyond Slack credentials.
+The agent can read and search only its bundled corpus. Shell, file writes, web access, delegation, todo management, and sandbox network access are disabled. Slack is its only connector.
 
 ## License
 

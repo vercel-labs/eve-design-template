@@ -28,7 +28,7 @@ function hasDuplicates(values) {
 
 function validateSlackIds(values, pattern, label) {
   if (!Array.isArray(values) || values.some((value) => !pattern.test(value))) {
-    fail(`${label} must contain valid Slack IDs.`);
+    fail(`${label} must be an array of valid Slack IDs.`);
   }
   if (hasDuplicates(values)) fail(`${label} contains duplicate IDs.`);
 }
@@ -53,31 +53,42 @@ async function requireRegularFile(path, label) {
   }
 }
 
-async function guidelineFiles(directory = resolve(knowledgeRoot, 'guidelines')) {
+async function filesUnder(directory) {
   const files = [];
   const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
     const path = resolve(directory, entry.name);
     if (entry.isSymbolicLink()) {
-      fail(`guidelines cannot contain symlinks: ${displayPath(path)}`);
+      fail(`knowledge cannot contain symlinks: ${displayPath(path)}`);
     }
     if (entry.isDirectory()) {
-      files.push(...(await guidelineFiles(path)));
-    } else if (
-      entry.isFile() &&
-      entry.name.endsWith('.md') &&
-      entry.name !== 'README.md'
-    ) {
+      files.push(...(await filesUnder(path)));
+    } else if (entry.isFile()) {
       files.push(path);
     }
   }
   return files;
 }
 
+export async function guidelineFiles() {
+  return (await filesUnder(resolve(knowledgeRoot, 'guidelines'))).filter(
+    (path) =>
+      path.endsWith('.md') && !path.endsWith(`${sep}README.md`),
+  );
+}
+
 export async function readManifest() {
+  let contents;
+  try {
+    contents = await readFile(manifestPath, 'utf8');
+  } catch (error) {
+    if (error?.code === 'ENOENT') fail('manifest.json does not exist.');
+    fail('manifest.json could not be read.');
+  }
+
   let manifest;
   try {
-    manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    manifest = JSON.parse(contents);
   } catch {
     fail('manifest.json must contain valid JSON.');
   }
@@ -154,8 +165,10 @@ export async function verifyKnowledge() {
         `source ${source.id} capturedAt must use canonical ISO format, such as 2026-07-24T00:00:00.000Z.`,
       );
     }
-    if (!source.snapshotPath.startsWith('knowledge/sources/')) {
-      fail(`source ${source.id} must point into knowledge/sources/.`);
+    if (!source.snapshotPath.startsWith(`knowledge/sources/${source.id}/`)) {
+      fail(
+        `source ${source.id} must point into knowledge/sources/${source.id}/.`,
+      );
     }
     await requireRegularFile(
       resolveWithin(
@@ -169,6 +182,77 @@ export async function verifyKnowledge() {
     sourceById.set(source.id, source);
   }
   if (hasDuplicates(sourceIds)) fail('source IDs must be unique.');
+
+  const guidelines = await guidelineFiles();
+  for (const guideline of guidelines) {
+    const contents = await readFile(guideline, 'utf8');
+    const metadata = contents.match(
+      /^<!--\s*sources:\s*([a-z0-9,\s-]+)\s*-->\r?\n<!--\s*priority:\s*(-?\d+)\s*-->/i,
+    );
+    const sources = metadata?.[1];
+    const priority = metadata?.[2];
+    if (!sources || priority === undefined) {
+      fail(
+        `${displayPath(guideline)} must start with sources and integer priority metadata.`,
+      );
+    }
+    const referencedSources = sources
+      .split(',')
+      .map((source) => source.trim())
+      .filter(Boolean);
+    if (hasDuplicates(referencedSources)) {
+      fail(`${displayPath(guideline)} contains duplicate source references.`);
+    }
+    if (
+      referencedSources.length === 0 ||
+      referencedSources.some((source) => !sourceIds.includes(source))
+    ) {
+      fail(`${displayPath(guideline)} references an unknown source.`);
+    }
+    const referencedEntries = referencedSources.map((source) =>
+      sourceById.get(source),
+    );
+    if (
+      referencedEntries.some(
+        (source) =>
+          source.status === 'superseded' ||
+          (manifest.status === 'approved' && source.status !== 'approved'),
+      )
+    ) {
+      fail(`${displayPath(guideline)} references an inactive source.`);
+    }
+    const priorities = new Set(
+      referencedEntries.map((source) => source.priority),
+    );
+    if (priorities.size > 1) {
+      fail(
+        `${displayPath(guideline)} references sources with different priorities; split it into one file per priority.`,
+      );
+    }
+    const [expectedPriority] = priorities;
+    if (Number(priority) !== expectedPriority) {
+      fail(`${displayPath(guideline)} priority must match its sources.`);
+    }
+  }
+
+  const allowedFiles = new Set([
+    manifestPath,
+    resolve(knowledgeRoot, 'manifest.schema.json'),
+    resolve(knowledgeRoot, 'guidelines/README.md'),
+    resolve(knowledgeRoot, 'sources/README.md'),
+    ...guidelines,
+    ...manifest.sources.map((source) => resolve(repoRoot, source.snapshotPath)),
+  ]);
+  const unexpectedFiles = (await filesUnder(knowledgeRoot)).filter(
+    (path) => !allowedFiles.has(path),
+  );
+  if (unexpectedFiles.length > 0) {
+    fail(
+      `knowledge contains files that are not reviewed corpus entries:\n${unexpectedFiles
+        .map(displayPath)
+        .join('\n')}`,
+    );
+  }
 
   if (manifest.status === 'approved') {
     if (!agent.designOwnerSlackId) {
@@ -195,47 +279,8 @@ export async function verifyKnowledge() {
     ) {
       fail('sources cannot be draft and must be rights-confirmed.');
     }
-    const guidelines = await guidelineFiles();
     if (guidelines.length === 0) {
       fail('approved corpora require at least one normalized guideline file.');
-    }
-    for (const guideline of guidelines) {
-      const contents = await readFile(guideline, 'utf8');
-      const sources = contents.match(
-        /<!--\s*sources:\s*([a-z0-9,\s-]+)\s*-->/i,
-      )?.[1];
-      const priority = contents.match(
-        /<!--\s*priority:\s*(-?\d+)\s*-->/i,
-      )?.[1];
-      if (!sources || priority === undefined) {
-        fail(
-          `${displayPath(guideline)} must declare sources and integer priority metadata.`,
-        );
-      }
-      const referencedSources = sources
-        .split(',')
-        .map((source) => source.trim())
-        .filter(Boolean);
-      if (
-        referencedSources.length === 0 ||
-        referencedSources.some((source) => !sourceIds.includes(source))
-      ) {
-        fail(`${displayPath(guideline)} references an unknown source.`);
-      }
-      const referencedEntries = referencedSources.map((source) =>
-        sourceById.get(source),
-      );
-      if (referencedEntries.some((source) => source.status !== 'approved')) {
-        fail(`${displayPath(guideline)} references an inactive source.`);
-      }
-      const expectedPriority = Math.max(
-        ...referencedEntries.map((source) => source.priority),
-      );
-      if (Number(priority) !== expectedPriority) {
-        fail(
-          `${displayPath(guideline)} priority must match its highest-priority source.`,
-        );
-      }
     }
   } else if (
     manifest.approval.approvedBy !== null ||

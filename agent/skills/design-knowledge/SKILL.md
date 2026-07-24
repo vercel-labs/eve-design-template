@@ -12,6 +12,7 @@ Approved knowledge is under `/workspace/knowledge`.
 4. Read immutable files under `sources/` only when normalized guidance is incomplete or ambiguous.
 
 Higher numeric source priority wins. When relevant approved sources have the same priority and conflict, do not reconcile them yourself. Follow the conflict behavior in the agent instructions.
+Ignore sources marked `superseded` in the manifest.
 
 Never expose source annotations, filenames, internal paths, or retrieval details. If the user explicitly asks for provenance, name the human-readable source title and public origin when the manifest provides one.
 

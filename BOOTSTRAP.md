@@ -1,89 +1,174 @@
 # Bootstrap your design agent
 
-Give this file to Codex, Claude Code, Conductor, or another coding agent in a clone of this repository. Complete the workflow with the person who owns the organization's design guidance.
+Use this workflow with the person who owns your organization's design guidance.
 
-Do not change `knowledge/manifest.json` to `approved` until the owner explicitly approves the generated corpus.
+The output is a reviewed design corpus under `knowledge/`. The owner, not the coding agent, approves it.
 
-## Rules
+## Guardrails
 
-- Work only under `knowledge/` and `branding/`, except for documentation changes the owner requests.
-- Never add a source without confirmation that the organization has the right to store it in this repository.
-- Do not crawl a site. Fetch only URLs the owner explicitly approves.
-- Preserve source material exactly under `knowledge/sources/`.
-- Never edit an existing source snapshot. Add a dated replacement.
-- Keep inferred rules in draft until the owner confirms them.
-- Do not store secrets, credentials, private Slack history, or conversation attachments.
-- This repository stores the corpus. Use a private repository for private guidance.
+- Work only under `knowledge/` and `branding/`, unless the owner requests documentation changes.
+- Use only sources the owner provides or explicitly approves.
+- Confirm the organization can store every source in this repository.
+- Fetch only approved URLs. Do not crawl a site or follow links to new sources.
+- Preserve source material under `knowledge/sources/`. Never edit an existing snapshot.
+- Give every retained snapshot file its own manifest entry. Do not leave working notes under `knowledge/`.
+- Treat interview answers as source material. Confirm the record before using it.
+- Mark proposals and inferences as draft until the owner confirms them.
+- Do not store secrets, credentials, Slack history, or conversation attachments.
+- Use a private repository for private guidance.
+- Keep `knowledge/manifest.json` set to `draft` until explicit approval.
 
-## 1. Establish configuration
+## 1. Find the starting point
 
-Ask one grouped set of questions:
+Inspect the current manifest and knowledge folders. Summarize their state in five bullets or fewer.
 
-1. Agent name, one-line description, and optional PNG or JPEG Slack icon.
-2. Design owner's Slack member ID.
-3. Whether clearly labeled general design recommendations are allowed.
-4. Optional Slack channel and member allowlists. Empty means any member may invoke the bot in a channel where it is installed.
-5. Desired voice, preferred terms, and prohibited language.
+Then ask:
 
-Update `manifest.json` with these answers. Store an optional icon under `branding/` and set `agent.iconPath`. Leave the manifest status as `draft`. If Slack Connect was already created by the Deploy button or `pnpm run setup`, remind the owner to update its visible identity in Vercel Connect settings.
+1. Do you have existing design guidance? Share the exact URLs, files, or text. Say `none` if it does not exist.
+2. Who owns the final design decisions? Include their Slack member ID.
+3. What products, surfaces, and decisions should this agent help with?
 
-## 2. Collect approved sources
+Ask one small batch at a time. Do not ask questions already answered by a source.
 
-Ask for any combination of:
+Choose the matching path:
 
-- Explicit public URLs.
-- Pasted design guidance.
+- **Existing guidance:** capture it, extract explicit rules, then ask only about material gaps.
+- **Partial guidance:** capture it, show what it covers, then interview for missing decisions.
+- **No guidance:** run the design interview in section 3 and turn the confirmed answers into the first source.
+
+## 2. Capture approved sources
+
+Accept:
+
+- Explicit URLs.
+- Pasted guidance.
 - Local files.
-- Product or code examples the owner wants treated as evidence.
+- Product or code examples the owner identifies as evidence.
+- Confirmed design interview notes.
 
 For each source:
 
-1. Confirm the owner has the right to commit it.
-2. Capture it unchanged under `knowledge/sources/<source-id>/<ISO-date>/`.
-3. Add a manifest entry with origin, capture time, owner, priority, status, and `rightsConfirmed`.
-4. Ask before fetching any additional link, even when it looks relevant.
+1. Confirm the organization has the right to commit it.
+2. Assign a short source ID using lowercase letters, numbers, and hyphens.
+3. Save an unchanged snapshot under `knowledge/sources/<source-id>/<YYYY-MM-DD>/`.
+4. Add it to `knowledge/manifest.json`.
+5. Record its title, origin, canonical capture time, owner, priority, status, and rights confirmation.
 
-If guidance already exists, inspect it and report only material gaps. Ask only the missing questions from the next section.
+Use `100` as the default priority. Higher numbers take precedence. Propose a precedence table and ask the owner to confirm it. Do not infer precedence from document age, specificity, or format.
 
-## 3. Fill gaps
+For third-party material the organization does not own, do not snapshot it unless its license permits redistribution. Instead, capture the owner's decisions as the organization's own rules and record the third-party URL in the confirmed interview record.
 
-When sources are absent or incomplete, interview the owner about:
+When a URL redirects, record the final URL as the origin. Ask before fetching any other URL.
 
-- Scope and non-goals.
-- Users and product context.
-- Ranked design principles.
-- Voice, terms, and prohibited language.
-- Accessibility baseline.
-- Color, typography, spacing, and visual foundations.
-- Components and interaction patterns.
-- Good and bad examples, including why.
-- Source precedence and the design owner.
-- Behavior when guidance is missing.
+## 3. Interview for missing guidance
 
-Distinguish explicit rules from inferences. Inferences remain draft until confirmed.
+Skip topics already answered by approved sources. Ask four or fewer related questions per message.
 
-## 4. Normalize guidance
+Cover:
 
-Write concise Markdown under `knowledge/guidelines/`. Organize by topic, not source.
+### Scope
 
-Each rule must include enough metadata for maintainers to trace it:
+- Who uses the product?
+- Which surfaces and tasks are in scope?
+- What is explicitly out of scope?
+- Which user or business outcomes matter most?
+
+### Principles
+
+- What are the ranked design principles?
+- What tradeoffs should the team make when principles compete?
+- Which products or experiences are good references, and why?
+- Which patterns should the agent reject, and why?
+
+### Foundations
+
+- What are the accessibility requirements?
+- Which color, typography, spacing, layout, icon, and motion rules matter?
+- Which tokens or libraries are canonical?
+- What responsive behavior is required?
+
+### Components and interaction
+
+- Which components and patterns are preferred?
+- How should loading, empty, error, success, destructive, and permission states behave?
+- Which navigation, form, table, modal, notification, and confirmation patterns matter?
+- What exceptions are allowed?
+
+### Content
+
+- What voice should the product use?
+- Which terms are preferred or prohibited?
+- How should labels, instructions, validation, errors, and destructive actions be written?
+
+### Unknowns
+
+- May the agent give clearly labeled general design recommendations when the corpus is silent?
+- Which gaps should remain unanswered?
+- Who resolves new conflicts?
+
+For every answer, label it:
+
+- `Explicit`: stated by an approved source or the owner.
+- `Proposed`: suggested by the coding agent and awaiting confirmation.
+- `Open`: unresolved.
+
+If no prior source exists, write a neutral Q&A record from the owner's answers. Show it for correction. After confirmation and rights approval, save it as an immutable source snapshot.
+
+After Scope, Principles, and Unknowns, offer to stop. A small confirmed corpus is enough to launch. Add foundations, interaction, and content later through `REFRESH.md`.
+
+## 4. Write actionable guidelines
+
+Write concise Markdown under `knowledge/guidelines/`. Organize by decision topic, not by source.
+
+Each file must start with:
 
 ```md
 <!-- sources: product-guidelines, writing-guide -->
 <!-- priority: 100 -->
 ```
 
-Preserve meaningful exceptions and product-specific context. Do not invent consistency by merging equal-priority conflicts. Record the conflict and ask the owner to resolve it.
+A file can cite multiple sources only when they have the same priority. Every rule in the file must share that source set. Split the file when either changes.
 
-## 5. Review
+Each rule should state:
 
-Show the owner:
+- The decision or action.
+- Where it applies.
+- Meaningful exceptions.
+- A concrete good or bad example when it removes ambiguity.
 
-- Added source snapshots.
-- Normalized rules.
-- Inferences awaiting confirmation.
-- Conflicts and gaps.
-- Agent identity, general-guidance policy, and allowlists.
+Avoid vague rules such as "make it clean" or "keep it intuitive." Preserve product context and intentional exceptions.
+
+Only confirmed guidance can become an active rule. Keep `Proposed` and `Open` items in the approval packet, never under `knowledge/guidelines/`.
+
+## 5. Handle conflicts
+
+- Apply the higher-priority source.
+- Do not merge conflicting rules with equal priority.
+- Record the equal-priority conflict in the relevant guideline.
+- State the competing rules without choosing one.
+- Require the design owner to resolve it.
+
+An unresolved equal-priority conflict may remain in an approved corpus only when the guideline tells the runtime agent to report the conflict and send it to the design owner.
+
+## 6. Configure the agent
+
+Ask for any missing runtime choices:
+
+- Agent name and one-line description.
+- Optional PNG or JPEG Slack icon.
+- Whether labeled general recommendations are allowed.
+- Optional Slack channel and member allowlists.
+- Preferred voice, terms, and prohibited language not already covered by the corpus.
+
+Reuse the answer from Unknowns for `allowGeneralGuidance`. Do not ask twice.
+
+Each empty allowlist leaves that dimension unrestricted. Copy member IDs from Slack profiles and channel IDs from channel details.
+
+Store identity, ownership, general-guidance policy, and allowlists in `knowledge/manifest.json`. Store an icon under `branding/` and set `agent.iconPath`. Treat confirmed voice and terminology answers as sourced guidelines, not manifest fields.
+
+If Slack Connect already exists, remind the owner to update its visible name, description, and icon in Vercel Connect settings.
+
+## 7. Prepare the approval packet
 
 Run:
 
@@ -91,12 +176,40 @@ Run:
 pnpm verify:knowledge
 ```
 
-Ask explicitly: “Do you approve this design corpus for the agent to use?”
+Show the owner:
 
-Only after an explicit yes:
+- Source inventory, origins, owners, rights confirmation, and status.
+- Confirmed precedence table.
+- Guideline files added or changed.
+- Proposed rules awaiting confirmation.
+- Conflicts and gaps.
+- Agent identity, general-guidance policy, and allowlists.
+- Exact files changed.
 
-1. Mark active sources `approved`.
-2. Set `manifest.status` to `approved`.
-3. Record the approver and current canonical ISO timestamp, such as `2026-07-24T00:00:00.000Z`.
-4. Run `pnpm check`.
-5. Commit and push. If the Vercel project is not Git-connected, run `pnpm exec vercel deploy --prod` after pushing.
+Keep this review concise. Do not hide unresolved items in prose.
+
+Ask exactly:
+
+> Do you approve this design corpus for the agent to use?
+
+Approval must be explicit. Corrections, partial agreement, or approval of a source alone do not approve the corpus.
+
+## 8. Approve and publish
+
+After explicit corpus approval:
+
+1. Add accepted proposals to the guidelines and interview record. If that record is already saved, add a new dated snapshot with a new source ID and mark the prior entry `superseded`.
+2. Mark active sources `approved`.
+3. Mark replaced sources `superseded`.
+4. Set `manifest.status` to `approved`.
+5. Record the approver and current canonical ISO timestamp, such as `2026-07-24T00:00:00.000Z`.
+6. Run `pnpm check`.
+7. Show the final diff and check result.
+
+Ask separately before committing, pushing, or deploying. Corpus approval does not authorize publication.
+
+Git-connected Vercel projects deploy after a push to the production branch. Otherwise deploy with:
+
+```bash
+pnpm exec vercel deploy --prod
+```

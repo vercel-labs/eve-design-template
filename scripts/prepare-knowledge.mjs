@@ -1,14 +1,12 @@
 import {
   copyFile,
-  lstat,
   mkdir,
-  readdir,
   rm,
   writeFile,
 } from 'node:fs/promises';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, relative, resolve } from 'node:path';
 import {
-  displayPath,
+  guidelineFiles,
   knowledgeRoot,
   repoRoot,
   verifyKnowledge,
@@ -17,28 +15,14 @@ import {
 const outputRoot = resolve(repoRoot, 'agent/sandbox/workspace/knowledge');
 const generatedRoot = resolve(repoRoot, 'generated');
 
-async function collectFiles(directory) {
-  const files = [];
-  const entries = await readdir(directory, { withFileTypes: true });
-  entries.sort((left, right) => left.name.localeCompare(right.name));
-
-  for (const entry of entries) {
-    const path = join(directory, entry.name);
-    if (entry.isSymbolicLink()) {
-      throw new Error(`Knowledge cannot contain symlinks: ${displayPath(path)}`);
-    }
-    if (entry.isDirectory()) {
-      files.push(...(await collectFiles(path)));
-    } else if (entry.isFile()) {
-      files.push(path);
-    }
-  }
-
-  return files;
-}
-
 const manifest = await verifyKnowledge();
-const files = await collectFiles(knowledgeRoot);
+const activeSources = manifest.sources.filter(
+  (source) => source.status === 'approved',
+);
+const files = [
+  ...(await guidelineFiles()),
+  ...activeSources.map((source) => resolve(repoRoot, source.snapshotPath)),
+];
 
 await rm(outputRoot, { force: true, recursive: true });
 await mkdir(outputRoot, { recursive: true });
@@ -46,15 +30,7 @@ await mkdir(outputRoot, { recursive: true });
 let preparedFileCount = 0;
 for (const source of files) {
   const destinationPath = relative(knowledgeRoot, source);
-  if (
-    destinationPath === 'manifest.json' ||
-    destinationPath === 'manifest.schema.json'
-  ) {
-    continue;
-  }
   const destination = resolve(outputRoot, destinationPath);
-  const stats = await lstat(source);
-  if (!stats.isFile()) continue;
 
   await mkdir(dirname(destination), { recursive: true });
   await copyFile(source, destination);
@@ -67,7 +43,7 @@ await writeFile(
     {
       schemaVersion: manifest.schemaVersion,
       status: manifest.status,
-      sources: manifest.sources,
+      sources: activeSources,
     },
     null,
     2,
