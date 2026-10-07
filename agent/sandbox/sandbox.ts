@@ -1,9 +1,8 @@
 import { defineSandbox } from 'eve/sandbox';
-import { vercel } from 'eve/sandbox/vercel';
+import { VercelSandbox } from 'eve/sandbox/vercel';
 
-export default defineSandbox({
-  backend: vercel({ networkPolicy: 'deny-all' }),
-  async onSession({ use }) {
-    await use({ networkPolicy: 'deny-all' });
-  },
-});
+export const environment = VercelSandbox.environment();
+
+export default defineSandbox(() =>
+  environment.open({ networkPolicy: 'deny-all' }),
+);

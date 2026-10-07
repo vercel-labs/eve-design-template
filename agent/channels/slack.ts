@@ -1,5 +1,5 @@
 import { connectSlackCredentials } from '@vercel/connect/eve';
-import { slackChannel } from 'eve/channels/slack';
+import { defineSlackRenderer, slackChannel } from 'eve/channels/slack';
 import { designAgentConfig } from '../../generated/config.js';
 
 const setupIncompleteMessage =
@@ -8,6 +8,14 @@ const setupIncompleteMessage =
 const configuredCredentials = process.env.SLACK_CONNECTOR
   ? connectSlackCredentials(process.env.SLACK_CONNECTOR)
   : undefined;
+
+const quietRenderer = defineSlackRenderer({
+  events: {
+    'turn.started': () => {},
+    'actions.requested': () => {},
+    'reasoning.appended': () => {},
+  },
+});
 
 function isAllowed(value: string, allowlist: readonly string[]) {
   return allowlist.length === 0 || allowlist.includes(value);
@@ -48,11 +56,7 @@ export default slackChannel({
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ],
   },
-  events: {
-    'turn.started': () => {},
-    'actions.requested': () => {},
-    'reasoning.appended': () => {},
-  },
+  renderers: [quietRenderer],
   async onMessage(ctx, message) {
     if (!message.author || message.author.isBot) return null;
 
