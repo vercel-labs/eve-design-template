@@ -30,4 +30,8 @@ jobs:
         env:
           SOURCE_IMMUTABILITY_BASE: origin/${{ github.base_ref }}
         run: pnpm verify:source-immutability -- "$SOURCE_IMMUTABILITY_BASE"
-      - run: pnpm check
+      - run: pnpm verify:knowledge
+      - run: pnpm test
+      - run: pnpm type-check
+      - name: Build without Vercel sandbox credentials
+        run: pnpm build --skip-sandbox-prewarm
