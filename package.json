@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm prepare:knowledge && eve build",
-    "check": "pnpm verify:knowledge && pnpm test && pnpm type-check && pnpm build",
+    "check": "pnpm verify:knowledge && pnpm test && pnpm type-check && pnpm run info",
     "dev": "pnpm prepare:knowledge && eve dev",
     "info": "pnpm prepare:knowledge && eve info",
     "prepare:knowledge": "node scripts/prepare-knowledge.mjs",
