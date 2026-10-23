@@ -2,7 +2,7 @@
 
 A Slack design agent that answers from your approved design guidelines.
 
-> Experimental: this template uses Eve preview APIs pinned to `0.27.3`.
+> Experimental: this template uses eve preview APIs pinned to `0.83.0`.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Feve-design-template%2Ftree%2Fmain&connect=%5B%7B%22type%22%3A%22slack%22%2C%22env%22%3A%22SLACK_CONNECTOR%22%2C%22triggers%22%3Atrue%2C%22triggerPath%22%3A%22%2Feve%2Fv1%2Fslack%22%7D%5D)
 
@@ -84,11 +84,13 @@ pnpm exec vercel env pull
 pnpm dev
 ```
 
-Run the full check:
+Run the full check with your linked Vercel project credentials:
 
 ```bash
 pnpm check
 ```
+
+CI runs the same knowledge verification, tests, and typecheck, then builds with `pnpm build --skip-sandbox-prewarm`. This checks compilation without Vercel credentials but does not prepare a deployable sandbox snapshot. Production builds still run sandbox preparation through `pnpm build`.
 
 Other commands:
 
