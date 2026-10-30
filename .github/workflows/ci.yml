@@ -30,4 +30,4 @@ jobs:
         env:
           SOURCE_IMMUTABILITY_BASE: origin/${{ github.base_ref }}
         run: pnpm verify:source-immutability -- "$SOURCE_IMMUTABILITY_BASE"
-      - run: pnpm check
+      - run: pnpm check --skip-sandbox-prewarm
