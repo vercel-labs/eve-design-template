@@ -12,8 +12,9 @@ const configuredCredentials = process.env.SLACK_CONNECTOR
 const quietRenderer = defineSlackRenderer({
   events: {
     'turn.started': () => {},
-    'actions.requested': () => {},
-    'reasoning.appended': () => {},
+    'call.requested': () => {},
+    'content.delta': (event, _ctx, next) =>
+      event.data.kind === 'reasoning' ? undefined : next(event),
   },
 });
 
