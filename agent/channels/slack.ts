@@ -13,7 +13,8 @@ const quietRenderer = defineSlackRenderer({
   events: {
     'turn.started': () => {},
     'call.requested': () => {},
-    'content.delta': (event, _ctx, next) =>
+    'content.delta': () => {},
+    'content.completed': (event, _ctx, next) =>
       event.data.kind === 'reasoning' ? undefined : next(event),
   },
 });
